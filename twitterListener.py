@@ -12,10 +12,14 @@ from pyspark.streaming import StreamingContext
 HOST = os.getenv("HOST")
 PORT = int(os.getenv("PORT"))
 
-# Our filter function:
+
+def sampleWord(rdd):
+ return rdd.sample(False,0.5,10)
+
 def filter_tweets(tweet):
-  if tweet.has_key('lang'): # When the lang key was not present it caused issues
-      if tweet['lang'] == 'en':
+  json_tweet = json.loads(tweet)
+  if 'lang' in json_tweet: # When the lang key was not present it caused issues
+      if json_tweet['lang'] == 'en':
         return True # filter() requires a Boolean value
   return False
   
@@ -25,13 +29,15 @@ sparkContext.setLogLevel("ERROR")
 
 sqlContext = SQLContext(sparkContext)
 
-streamingContext = StreamingContext(sparkContext, 10)
+streamingContext = StreamingContext(sparkContext, 1)
 
 dstream = streamingContext.socketTextStream(HOST, PORT)
-json_objects = dstream.map(lambda input: json.loads(input)['text'])
-
+json_objects = dstream.filter(lambda input: filter_tweets(input))
+sampled = json_objects.transform(sampleWord)
+texts = sampled.map(lambda obj: json.loads(obj)['text'])
 # Print the first ten elements of each RDD generated in this DStream to the console
-json_objects.pprint()
+counter = texts.count()
+counter.pprint()
 #   .filter( lambda word: word.lower().startswith("#") )\
 #   .map( lambda word: ( word.lower(), 1 ) )\
 #   .reduceByKey( lambda a, b: a + b )\
