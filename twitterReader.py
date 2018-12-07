@@ -3,10 +3,10 @@ import json
 import socket
 import tweepy
 import pickle
-from tweepy import OAuthHandler, Stream
-from tweepy.streaming import StreamListener
 import settings
 
+from tweepy import OAuthHandler, Stream
+from tweepy.streaming import StreamListener
 from signal import signal, SIGPIPE, SIG_DFL
 
 # Stop program if sigpipe detected
@@ -27,10 +27,9 @@ class TwitterListener(StreamListener):
       data = data.replace(r'\n', '')
       json_tweet = json.loads(data)
       if(json_tweet["text"]):
-        # print(json_tweet)
         self.conn.send(data.encode())
-    except BaseException as e:
-      print("Error on_data: %s" % str(e))
+    except:
+      print("Tweet Deleted")
 
   def on_error(self, status):
     if status == 420:
@@ -42,10 +41,8 @@ def sendTwitterData(conn):
   auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
 
   api = tweepy.API(auth)
-
   stream = tweepy.Stream(auth = api.auth, listener=TwitterListener(conn))
   stream.sample()
-
 
 if __name__ == "__main__":
   host = os.getenv("HOST")
